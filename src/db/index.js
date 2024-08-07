@@ -10,8 +10,31 @@ const connectDB = async () => {
     } catch (error) {
         console.log(" MONGODB connection FAILED ", error);
         process.exit(1)
+        
 
     }
 }
 
 export default connectDB
+
+
+
+/*
+(async () => {
+   try {
+      await mongoose.connect(`${process.env.MONGODB_URL}/${DB_NAME}`);
+      app.on("ERROR: ", (error) => {
+         console.error("ERROR: ", error);
+         throw error;
+      });
+
+      app.listen(process.env.PORT,  () => {
+         console.log(`App is listen on port ${process.env.PORT}`);
+         
+      })
+   } catch (error) {
+      console.error("ERROR: ", error);
+      throw error;
+   }
+})();
+*/
