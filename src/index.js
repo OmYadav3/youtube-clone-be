@@ -6,7 +6,7 @@ dotenv.config({
    path:'./env'
 })
 
-// Basically a async function are gave a promise so we use then and catch 
+// Basically a async function are giving a promise so we use then and catch 
 connectDB()
 .then(() => {
    app.listen(process.env.PORT || 8000, () => {
