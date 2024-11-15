@@ -31,10 +31,6 @@ const userSchema = new Schema(
       },
       coverImage: {
          type: String, // cloudinary url
-         required: true,
-      },
-      coverImage: {
-         type: String, // cloudinary url
       },
       watchHistory: [
          {
@@ -62,7 +58,7 @@ userSchema.pre("save", async function (next) {
    next();
 });
 
-// design customs method for comparing the password send by the user and the password already registered
+// Design customs method for comparing the password send by the user and the password already registered
 
 userSchema.methods.isPasswordCorrect = async function (password) {
    return await bcrypt.compare(password, this.password);
