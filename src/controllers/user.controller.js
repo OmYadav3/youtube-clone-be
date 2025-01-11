@@ -305,7 +305,7 @@ const updateAccountDetails = asyncHandler(async (req, res) =>{
          }
       },
       {
-         new: true     // its means when user updated valuye return 
+         new: true     // its means when user updated value return 
       }
    ).select("-password")
 
@@ -416,7 +416,7 @@ const getUserChannelProfile = asyncHandler(async (req, res ) => {
       },
       {
          $lookup: {
-            from: 'subscriptions',    // take this from model nad also check what the name in mongoDB
+            from: 'subscriptions',    // take this from model and also check what the name in mongoDB
             localField: '_id',        
             foreignField: 'channel',
             as: 'subscriber'
