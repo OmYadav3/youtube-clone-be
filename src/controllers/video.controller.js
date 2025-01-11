@@ -8,33 +8,56 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+    const { page = 1, limit = 10, query, sortBy, sortType } = req.query
     //TODO: get all videos based on query, sort, pagination
-
-    if(!userId) {
-        throw new ApiError(400, "User id is required")
-    }
-
-    // const video = await Video.find({userId: req.user?._id})
-    // .sort({[sortBy]: sortType})
 
     const videos = await Video.aggregate([
         {
-            $match:{
-                userId:req.user?._id,
-                query
+            $match:{            // match the video with the specified query string 
+                $or: [
+                    {
+                        title: {$regex: query, $options: "i"}
+                    },
+                    {
+                        description: {$regex: query, $options: "i"}
+                    }
+                ]
             }
         },
         {
-            $sort:{
-                [sortBy]: sortType
+            $lookup: {                    // this $lookup operation join the two document
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "createdBy"
             }
         },
         {
-            $skip: (page - 1) * limit
+            $unwind: "$createdBy"       // this $unwind operation create the 2 or more documents with same id  
         },
         {
-            $limit: 10
+            $project: {                // this $project operation project these value only 
+               videoFile: 1,
+               thumbnail: 1,
+               title: 1,
+               description: 1,
+               createdBy: {
+                fullName: 1,
+                username: 1,
+                avatar: 1
+               },     
+            }
+        },
+        {
+            $sort:{         // this $sort operation sort these value by their associated 
+                [sortBy]: sortType  === 'asc'? 1 : -1, 
+            }
+        },
+        {
+            $skip: (page - 1) * limit  // this $skip operation skip the first page and return the first page with the given value       
+        },
+        {
+            $limit: parseInt(limit)   // this $limit operation limit the first page and return the first page with the given
         }
     ])
     
