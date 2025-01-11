@@ -27,4 +27,20 @@ const uploadOnCloudinary = async (localFilePath) => {
    }
 };
 
-export { uploadOnCloudinary };
+const deleteFromCloudnary = async (cloudnaryFilePath, type) => {
+   try {
+      if(!cloudinaryFilePath) return null 
+      const fileName = cloudnaryFilePath.split("/").pop().split(".")[0]
+      const response = cloudnary.uploader.destroy(fileName,
+         { resource_type: type },
+      );
+      return response;
+
+
+   } catch (error) {
+      console.error("Error while deleting from cloudinary", error);
+      return null;
+   }
+}
+
+export { uploadOnCloudinary, deleteFromCloudnary };
