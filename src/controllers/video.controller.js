@@ -4,7 +4,7 @@ import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {uploadOnCloudinary, deleteFromCloudnary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -74,7 +74,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
     const videoFileLocalPath= req.files?.videoFile[0]?.path
-
+    // console.log(videoFileLocalPath)
     // TODO: get video, upload to cloudinary, create video
     // TODO: validate input fields
     // TODO: uploading video to cloudinary
@@ -181,7 +181,7 @@ const updateVideo = asyncHandler(async (req, res) => {
         throw new ApiError(403, "You are not authorized to update this video")
     }
 
-    const deleteThumbnailResponse = await deleteFromCloudnary(video.thumbnail, "image")
+    const deleteThumbnailResponse = await deleteFromCloudinary(video.thumbnail, "image")
     if(deleteThumbnailResponse !== "ok"){
         throw new ApiError(500, "Failed to delete thumbnail from cloudinary")
     }
@@ -235,11 +235,11 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Video not found")
     }
 
-    if(!video.owner.equals(req.user._id)){
-        throw new ApiError(403, "You are not authorized to perform this action");
-    }
+    // if(!video.owner.equals(req.user._id)){
+    //     throw new ApiError(403, "You are not authorized to perform this action");
+    // }
 
-    const cloudnaryDeletedVideo = await deleteFromCloudnary(
+    const cloudnaryDeletedVideo = await deleteFromCloudinary(
         video.videoUrl,
         "video"
     )
@@ -247,7 +247,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to delete video from cloudinary")
     }
 
-    const thumbnailVideo = await deleteFromCloudnary(
+    const thumbnailVideo = await deleteFromCloudinary(
         video.thumbnail,
         "image"
     )
