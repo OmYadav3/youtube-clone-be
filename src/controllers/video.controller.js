@@ -74,6 +74,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
     const videoFileLocalPath= req.files?.videoFile[0]?.path
+
+    // console.log(videoFileLocalPath)
     // console.log(videoFileLocalPath)
     // TODO: get video, upload to cloudinary, create video
     // TODO: validate input fields
@@ -93,6 +95,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     if(!videoFile.url){
         throw new ApiError("Failed to upload video to cloudinary", 500)
     }
+    // console.log(videoFile)
 
     const thumbnailLocalPath= req.files?.thumbnail[0]?.path
     if(!thumbnailLocalPath){
@@ -113,9 +116,12 @@ const publishAVideo = asyncHandler(async (req, res) => {
         userId: req.user?._id
     })
 
+    console.log(video)
+
     if(!video){
         throw new ApiError(500, "Failed to create video")
     }
+    
 
     return res
     .status(200)
@@ -234,7 +240,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     if(!video){
         throw new ApiError(404, "Video not found")
     }
-
+    console.log(video)
     // if(!video.owner.equals(req.user._id)){
     //     throw new ApiError(403, "You are not authorized to perform this action");
     // }
