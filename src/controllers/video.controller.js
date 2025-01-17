@@ -110,8 +110,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const video = await Video.create({
         title,
         description,
-        videoUrl: videoFile.url,
-        thumbnailUrl: thumbnail.url,
+        videoFile: videoFile.url,
+        thumbnail: thumbnail.url,
         duration: videoFile.duration,
         userId: req.user?._id
     })
@@ -159,63 +159,68 @@ const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     const { title, description } = req.body
     //TODO: update video details like title, description, thumbnail
+    
     if (!isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid video ID");
       }
     
-
     if(!title ||!description){
         throw new ApiError(400, "Title and description are required")
     }
+    const videoThumbnail = req.file?.path;
 
-    if(!videoId){
-        throw new ApiError(400, "Video id is required")
+    if (!videoThumbnail) {
+      throw new ApiError(400, "Provide thumbnail file");
     }
-
-    const videoThumbnail = req.file?.path
-
-    if(!videoThumbnail){
-        throw new ApiError(400, "thumbnail file are required")
+  
+    const video = await Video.findById(videoId);
+  
+    if (!video) {
+      throw new ApiError(404, "Video not found");
     }
-
-    const video = await Video.findById(videoId)
-    if(!video){
-        throw new ApiError(400, "Video not found")
+  
+    // if (!video.owner.equals(req.user._id)) {
+    //   throw new ApiError(403, "You are not authorized to perform this action");
+    // }
+  
+    const deleteThumbnailResponse = await deleteFromCloudinary(
+      video.thumbnail,
+      "image"
+    );
+    // console.log(deleteThumbnailResponse)
+  
+    if (!deleteThumbnailResponse) {
+      throw new ApiError(
+        500,
+        "Error while deleting old thumbnail from the cloudinary"
+      );
     }
-
-    if(!video.owner.equals(req.user._id)){
-        throw new ApiError(403, "You are not authorized to update this video")
+  
+    const newThumbnail = await uploadOnCloudinary(videoThumbnail);
+  
+    if (!newThumbnail.url) {
+      throw new ApiError(500, "Error while uploading new thumbnail");
     }
-
-    const deleteThumbnailResponse = await deleteFromCloudinary(video.thumbnail, "image")
-    if(deleteThumbnailResponse !== "ok"){
-        throw new ApiError(500, "Failed to delete thumbnail from cloudinary")
-    }
-
-    const newThumbnail = await uploadOnCloudinary(videoThumbnail)
-    if(!newThumbnail.url){
-        throw new ApiError(500, "Error uploading new thumbnail")
-    }
-
-    const uploadVideo = await Video.findByIdAndUpdate(
-        videoId,
-        {
-            $set: {
-                thumbnail: newThumbnail.url,
-                title,
-                description
-            }
+  
+    const updatedVideo = await Video.findByIdAndUpdate(
+      videoId,
+      {
+        $set: {
+          title,
+          description,
+          thumbnail: newThumbnail.url,
         },
-        {
-            new: true
-        }
-    )
+      },
+      {
+        new: true,
+      }
+    );
 
     return res
     .status(200)
-    .jaon(new ApiResponse(
+    .json(new ApiResponse(
         200,
-        uploadVideo,
+        updatedVideo,
         "Video file successfully updated"
     ))
 
@@ -246,10 +251,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
     // }
 
     const cloudnaryDeletedVideo = await deleteFromCloudinary(
-        video.videoUrl,
+        video.videoFile,
         "video"
     )
-    if(!cloudnaryDeletedVideo !=="ok"){
+
+    console.log(cloudnaryDeletedVideo)
+    if(!cloudnaryDeletedVideo){
         throw new ApiError(500, "Failed to delete video from cloudinary")
     }
 
@@ -257,7 +264,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
         video.thumbnail,
         "image"
     )
-    if(!thumbnailVideo !=="ok"){
+    console.log(thumbnailVideo)
+    if(!thumbnailVideo){
         throw new ApiError(
             500,
             "Failed to delete thumbnail from cloudinary"

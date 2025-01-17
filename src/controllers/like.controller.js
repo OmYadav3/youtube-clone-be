@@ -3,6 +3,7 @@ import {Like} from "../models/like.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { Video } from "../models/video.model.js"
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
@@ -11,78 +12,45 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     //Check if user has already liked the video
     // If yes, remove like
     // If no, add like
-    
+
     if(!isValidObjectId(videoId)){
         throw new ApiError(400,"Invalid video Id")
     }
-    
-    const video = await Video.findById(videoId)
-    if(!video){
-        throw new ApiError(400,"Video not found")
+
+ const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(400, "Invalid Video ID");
+  }
+
+  const likedVideo = await Like.findOne({
+    $and: [{ video: videoId }, { likedBy: req.user._id }],
+  });
+
+  if (!likedVideo) {
+    const createdLike = await Like.create({
+      video: videoId,
+      likedBy: req.user._id,
+    });
+
+    if (!createdLike) {
+      throw new ApiError(500, "Error while liking the video");
     }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, createdLike, "User liked the video"));
+  }
 
-    if(!video.user.equals(req.user._id)){
-        throw new ApiError(403, "You are not authorized to perform this action");
-    }
+  const unLikedVideo = await Like.findByIdAndDelete(likedVideo._id);
 
-    const like = await Like.aggregate(
-        [
-            {
-                $match: {
-                    video: mongoose.Types.objectId(videoId),
-                    user: req.user._id
-                }
-            },
-            {
-               $lookup: {
-                from: "video",
-                localField: "video",
-                foreign: "_id",
-                as: "likedVideo",
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "users",
-                            localField: "owner",
-                            foreignField: "_id",
-                            as: "owner",
-                            pipeline: [
-                                {
-                                    $project: {
-                                        fullName: 1,
-                                        username: 1,
-                                        avatar: 1,
-                                    }
-                                },
-                                
-                            ]
-                        }
-                    },
-                    {
-                        $addFields: {
-                            likedVideo: {
-                                $arrayElemAt: ["$likedVideo", 0]
-                            }
-                        }
-                    }  
+  if (!unLikedVideo) {
+    throw new ApiError(500, "Error while unliking the video");
+  }
 
-                ]
-                
-               } 
-            },
-        ]
-    )
 
-    return res 
+  return res
     .status(200)
-    .json(
-        new ApiResponse(
-            200,
-            like.length > 0? "Like removed successfully" : "Like added successfully",
-            "Like toggled successfully"
-        )
-    )
-
+    .json(new ApiResponse(200, unLikedVideo, "User unliked the video"));
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
