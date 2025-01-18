@@ -140,6 +140,76 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
 const getLikedVideos = asyncHandler(async (req, res) => {
     //TODO: get all liked videos
+
+    const likedVideos = Like.aggregate(
+      [
+        {
+          $match: {
+            likedBy: req.user._id,
+          }
+        },
+        {
+          $lookup: {
+            from: 'videos',
+            localField: 'video',
+            foreignField: '_id',
+            as: 'likedVideos',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  title: 1,
+                  description: 1,
+                  owner:1 
+                }
+              }
+            ]
+          }
+        },
+        {
+          $unwind: '$likedVideos'
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'likedVideos.owner',
+            foreignField: '_id',
+            as: 'likedVideos.owner',
+            pipeline: [
+              {
+                $project: {
+                  fullName: 1,
+                  username: 1,
+                  avatar: 1,
+                },
+              },
+            ],
+          }
+        },
+        {
+          $unwind: '$likedVideos.owner'
+        },
+        {
+          $project: {
+            'likedVideos._id': 1,
+            'likedVideos.title': 1,
+            'likedVideos.description': 1,
+            'likedVideos.owner.fullName': 1,
+            'likedVideos.owner.username': 1,
+            'likedVideos.owner.avatar': 1,   
+          }
+        }
+      ]
+    )
+
+    if(!likedVideos || likedVideos.length === 0){
+      throw new ApiError(404, "No liked videos found")
+    }
+
+    return res
+     .status(200)
+     .json(new ApiResponse(200, likedVideos, "Liked videos fetched successfully"));
+    
 })
 
 export {
