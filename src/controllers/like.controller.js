@@ -47,7 +47,6 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Error while unliking the video");
   }
 
-
   return res
     .status(200)
     .json(new ApiResponse(200, unLikedVideo, "User unliked the video"));
@@ -56,6 +55,44 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const {commentId} = req.params
     //TODO: toggle like on comment
+
+    if(!isValidObjectId(commentId)){
+      throw new ApiError(400,"Invalid comment Id")
+    }
+
+    const comment = await Comment.findById(commentId);
+    if(!comment){
+      throw new ApiError(404, "Comment not found")
+    }
+
+    const likedComment = await Like.findOne({
+      $and: [{ comment: commentId }, { likedBy: req.user._id }],
+    });
+
+    if(!likedComment){
+      const createdLike = await Like.create({
+        comment: commentId,
+        likedBy: req.user._id,
+      })
+
+      if(!createdLike){
+        throw new ApiError(500, "Error while liking the comment")
+      }
+      return res
+       .status(200)
+       .json(new ApiResponse(200, createdLike, "User liked the comment"))
+    }
+
+    const unLikedComment = await Like.findByIdAndDelete({
+      _id: likedComment._id,
+    })
+    if(!unLikedComment){
+      throw new ApiError(500, "Error while unliking the comment")
+    }
+
+    return res
+     .status(200)
+     .json(new ApiResponse(200, unLikedComment, "User unliked the comment"))
 
 })
 
